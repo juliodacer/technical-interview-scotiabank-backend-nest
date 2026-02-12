@@ -1,1 +1,23 @@
-export class CreateProductDto {}
+import { IsInt, IsNotEmpty, IsNumber, IsString, Length } from 'class-validator';
+
+export class CreateProductDto {
+  @IsString({ message: 'Código no válido' })
+  @Length(10, 10, { message: 'El código debe tener exactamente 10 caracteres' })
+  code: string;
+
+  @IsNotEmpty({ message: 'El nombre del producto es obligatorio' })
+  @IsString({ message: 'Nombre no válido' })
+  name: string;
+
+  @IsNotEmpty({ message: 'La descripción del producto es obligatorio' })
+  @IsString({ message: 'Descripción no válida' })
+  description: string;
+
+  @IsNotEmpty({ message: 'El precio del producto es obligatorio' })
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'Precio no válido' })
+  price: number;
+
+  @IsNotEmpty({ message: 'La categoría es obligatoria' })
+  @IsInt({ message: 'La categoría no es válida' })
+  categoryId: number;
+}
