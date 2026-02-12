@@ -8,7 +8,8 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
-import { Repository } from 'typeorm';
+import { FindManyOptions, ILike, Repository } from 'typeorm';
+import { GetProductQueryDto } from './dto/get-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -49,8 +50,46 @@ export class ProductsService {
     };
   }
 
-  findAll() {
-    return `This action returns all products`;
+  async findAll(query: GetProductQueryDto) {
+    const { page = 1, size = 10, q, category, state } = query;
+
+    const normalizedSize = Math.max(1, Math.min(size, 100));
+    const normalizedPage = Math.max(1, page);
+
+    const options: FindManyOptions<Product> = {
+      relations: {
+        category: true,
+      },
+      order: {
+        id: 'DESC',
+      },
+      take: normalizedSize,
+      skip: (normalizedPage - 1) * normalizedSize,
+    };
+
+    const where: FindManyOptions<Product>['where'] = {};
+
+    if (category) {
+      where.category = { name: category };
+    }
+
+    if (state !== undefined && state !== null) {
+      where.state = state === 'true';
+    }
+
+    options.where = where;
+
+    const [products, total] =
+      await this.productRepository.findAndCount(options);
+
+    return {
+      products: products.map((product) => ({
+        ...product,
+        category: product.category.name,
+      })),
+      total,
+      page: normalizedPage,
+    };
   }
 
   findOne(id: number) {
