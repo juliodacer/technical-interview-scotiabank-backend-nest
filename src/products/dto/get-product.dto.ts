@@ -2,7 +2,6 @@ import { Transform } from 'class-transformer';
 import {
   IsBooleanString,
   IsInt,
-  IsNumberString,
   IsOptional,
   IsString,
   MaxLength,
@@ -28,7 +27,7 @@ export class GetProductQueryDto {
   q?: string;
 
   @IsOptional()
-  @IsNumberString({}, { message: 'La categoría debe ser un número' })
+  @IsString({ message: 'La categoría debe ser un texto' })
   category?: string;
 
   @IsOptional()

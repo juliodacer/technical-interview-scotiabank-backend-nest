@@ -8,8 +8,12 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
-import { FindManyOptions, Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { GetProductQueryDto } from './dto/get-product.dto';
+import {
+  normalizeText,
+  normalizeColumn,
+} from 'src/commons/utils/text-normalizer.util';
 
 @Injectable()
 export class ProductsService {
@@ -51,36 +55,23 @@ export class ProductsService {
   }
 
   async findAll(query: GetProductQueryDto) {
-    const { page = 1, size = 10, category, state } = query;
+    const { page = 1, size = 10, category, state, q } = query;
 
     const normalizedSize = Math.max(1, Math.min(size, 100));
     const normalizedPage = Math.max(1, page);
 
-    const options: FindManyOptions<Product> = {
-      relations: {
-        category: true,
-      },
-      order: {
-        id: 'DESC',
-      },
-      take: normalizedSize,
-      skip: (normalizedPage - 1) * normalizedSize,
-    };
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.category', 'category')
+      .orderBy('product.id', 'DESC')
+      .skip((normalizedPage - 1) * normalizedSize)
+      .take(normalizedSize);
 
-    const where: FindManyOptions<Product>['where'] = {};
+    this.applySearchFilter(queryBuilder, q);
+    this.applyCategoryFilter(queryBuilder, category);
+    this.applyStateFilter(queryBuilder, state);
 
-    if (category) {
-      where.category = { name: category };
-    }
-
-    if (state !== undefined && state !== null) {
-      where.state = state === 'true';
-    }
-
-    options.where = where;
-
-    const [products, total] =
-      await this.productRepository.findAndCount(options);
+    const [products, total] = await queryBuilder.getManyAndCount();
 
     return {
       products: products.map((product) => ({
@@ -90,6 +81,44 @@ export class ProductsService {
       total,
       page: normalizedPage,
     };
+  }
+
+  private applySearchFilter(
+    queryBuilder: SelectQueryBuilder<Product>,
+    searchTerm?: string,
+  ): void {
+    if (!searchTerm) return;
+
+    const normalizedSearch = normalizeText(searchTerm);
+    queryBuilder.andWhere(`${normalizeColumn('product.name')} LIKE :search`, {
+      search: `%${normalizedSearch}%`,
+    });
+  }
+
+  private applyCategoryFilter(
+    queryBuilder: SelectQueryBuilder<Product>,
+    category?: string,
+  ): void {
+    if (!category) return;
+
+    const normalizedCategory = normalizeText(category);
+    queryBuilder.andWhere(
+      `${normalizeColumn('category.name')} LIKE :categoryName`,
+      {
+        categoryName: `%${normalizedCategory}%`,
+      },
+    );
+  }
+
+  private applyStateFilter(
+    queryBuilder: SelectQueryBuilder<Product>,
+    state?: string,
+  ): void {
+    if (state === undefined || state === null) return;
+
+    queryBuilder.andWhere('product.state = :state', {
+      state: state === 'true',
+    });
   }
 
   async findOne(id: number) {
