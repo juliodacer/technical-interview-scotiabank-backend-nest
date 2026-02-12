@@ -1,4 +1,11 @@
-import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateProductDto {
   @IsString({ message: 'Código no válido' })
@@ -19,4 +26,8 @@ export class CreateProductDto {
   @IsNotEmpty({ message: 'La categoría es obligatoria' })
   @IsInt({ message: 'La categoría no es válida' })
   categoryId: number;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El estado del producto no es válido' })
+  state?: boolean;
 }

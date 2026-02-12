@@ -25,7 +25,7 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto) {
-    const { code, categoryId, ...productData } = createProductDto;
+    const { code, categoryId, state, ...productData } = createProductDto;
 
     const category = await this.categoryRepository.findOneBy({
       id: categoryId,
@@ -45,6 +45,7 @@ export class ProductsService {
     const savedProduct = await this.productRepository.save({
       ...productData,
       code,
+      state: state ? state : !!state,
       category,
     });
 
@@ -149,7 +150,7 @@ export class ProductsService {
       throw new NotFoundException('Producto no encontrado');
     }
 
-    const { categoryId, ...productData } = updateProductDto;
+    const { categoryId, state, ...productData } = updateProductDto;
     Object.assign(product, productData);
 
     if (categoryId) {
@@ -161,6 +162,8 @@ export class ProductsService {
       }
       product.category = category;
     }
+
+    product.state = state ? state : !!state;
 
     product.mod_date = new Date();
 
