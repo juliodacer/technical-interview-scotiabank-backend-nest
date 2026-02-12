@@ -8,7 +8,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from 'src/categories/entities/category.entity';
 import { Product } from './entities/product.entity';
-import { FindManyOptions, ILike, Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { GetProductQueryDto } from './dto/get-product.dto';
 
 @Injectable()
@@ -51,7 +51,7 @@ export class ProductsService {
   }
 
   async findAll(query: GetProductQueryDto) {
-    const { page = 1, size = 10, q, category, state } = query;
+    const { page = 1, size = 10, category, state } = query;
 
     const normalizedSize = Math.max(1, Math.min(size, 100));
     const normalizedPage = Math.max(1, page);
@@ -109,8 +109,30 @@ export class ProductsService {
       category: product.category.name,
     };
   }
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+
+  async update(id: number, updateProductDto: UpdateProductDto) {
+    const product = await this.productRepository.findOneBy({ id });
+
+    if (!product) {
+      throw new NotFoundException('Producto no encontrado');
+    }
+
+    const { categoryId, ...productData } = updateProductDto;
+    Object.assign(product, productData);
+
+    if (categoryId) {
+      const category = await this.categoryRepository.findOneBy({
+        id: categoryId,
+      });
+      if (!category) {
+        throw new NotFoundException('La categoría no existe');
+      }
+      product.category = category;
+    }
+
+    product.mod_date = new Date();
+
+    return await this.productRepository.save(product);
   }
 
   remove(id: number) {
