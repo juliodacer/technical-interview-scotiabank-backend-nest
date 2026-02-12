@@ -55,7 +55,7 @@ export class ProductsService {
   }
 
   async findAll(query: GetProductQueryDto) {
-    const { page = 1, size = 10, category, state, q } = query;
+    const { page = 1, size = 5, category, state, q } = query;
 
     const normalizedSize = Math.max(1, Math.min(size, 100));
     const normalizedPage = Math.max(1, page);
@@ -74,10 +74,13 @@ export class ProductsService {
     const [products, total] = await queryBuilder.getManyAndCount();
 
     return {
-      products: products.map((product) => ({
-        ...product,
-        category: product.category.name,
-      })),
+      products: products.map((product) => {
+        const { mod_date, reg_date, ...productData } = product;
+        return {
+          ...productData,
+          category: product.category.name,
+        };
+      }),
       total,
       page: normalizedPage,
     };
