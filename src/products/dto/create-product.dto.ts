@@ -1,8 +1,7 @@
-import { IsInt, IsNotEmpty, IsNumber, IsString, Length } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class CreateProductDto {
   @IsString({ message: 'Código no válido' })
-  @Length(10, 10, { message: 'El código debe tener exactamente 10 caracteres' })
   code: string;
 
   @IsNotEmpty({ message: 'El nombre del producto es obligatorio' })
